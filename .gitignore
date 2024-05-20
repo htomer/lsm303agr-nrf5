@@ -2,3 +2,4 @@
 *.emSession
 *.jlink
 Output
+.clang-format
