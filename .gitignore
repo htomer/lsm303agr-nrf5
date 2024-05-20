@@ -1,0 +1,4 @@
+# Segger and JLink
+*.emSession
+*.jlink
+Output
