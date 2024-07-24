@@ -49,6 +49,7 @@
 #include "nrf_log.h"
 #include "nrf_log_ctrl.h"
 #include "nrf_log_default_backends.h"
+#include "nrfx_gpiote.h"
 #include "nrfx_twim.h"
 
 #include <ctype.h>
@@ -108,6 +109,35 @@ static ret_code_t twi_master_init(void)
     return ret;
 }
 
+void dummy_event_handler(nrfx_gpiote_pin_t pin, nrf_gpiote_polarity_t action) {}
+
+static void gpio_init(void)
+{
+    nrfx_err_t              err_code;
+    nrfx_gpiote_in_config_t in_config;
+
+    err_code = nrfx_gpiote_init();
+    APP_ERROR_CHECK(err_code);
+
+    in_config      = (nrfx_gpiote_in_config_t)NRFX_GPIOTE_CONFIG_IN_SENSE_TOGGLE(true);
+    in_config.pull = NRF_GPIO_PIN_PULLUP;
+    err_code       = nrfx_gpiote_in_init(TWIM_SCL_PIN, &in_config, dummy_event_handler);
+    // nrfx_gpiote_in_event_enable(TWIM_SCL_PIN, false);
+    APP_ERROR_CHECK(err_code);
+
+    in_config      = (nrfx_gpiote_in_config_t)NRFX_GPIOTE_CONFIG_IN_SENSE_TOGGLE(true);
+    in_config.pull = NRF_GPIO_PIN_PULLUP;
+    err_code       = nrfx_gpiote_in_init(TWIM_SDA_PIN, &in_config, dummy_event_handler);
+    // nrfx_gpiote_in_event_enable(TWIM_SDA_PIN, false);
+    APP_ERROR_CHECK(err_code);
+
+    in_config      = (nrfx_gpiote_in_config_t)NRFX_GPIOTE_CONFIG_IN_SENSE_TOGGLE(true);
+    in_config.pull = NRF_GPIO_PIN_NOPULL;
+    err_code       = nrfx_gpiote_in_init(MAG_INT_PIN, &in_config, magnetometer_gpiote_event_handler);
+    // nrfx_gpiote_in_event_enable(MAG_INT_PIN, true);
+    APP_ERROR_CHECK(err_code);
+}
+
 /**
  * @brief Initialize common modules and services.
  *
@@ -117,10 +147,10 @@ void peripherals_init(void)
     ret_code_t err_code;
 
     /* Initializing TWI master interface. */
-    err_code = twi_master_init();
-    APP_ERROR_CHECK(err_code);
+    twi_master_init();
 
-    // TODO.
+    /* Initializing GPIOs. */
+    gpio_init();
 }
 
 /**
