@@ -43,6 +43,7 @@
 #include "app_util_platform.h"
 #include "bsp.h"
 #include "config.h"
+#include "magnetometer/magnetometer.h"
 #include "nrf.h"
 #include "nrf_drv_clock.h"
 #include "nrf_gpio.h"
@@ -58,6 +59,10 @@
 #include <stdio.h>
 
 static const nrfx_twim_t m_twi_master = NRFX_TWIM_INSTANCE(TWIM_INST);
+
+const nrfx_twim_t *p_twi_master = &m_twi_master;
+
+static void magnetometer_evt_handler(const magnetometer_event_t event);
 
 /**
  * @brief Initialize common modules and services.
@@ -151,6 +156,9 @@ void peripherals_init(void)
 
     /* Initializing GPIOs. */
     gpio_init();
+
+    // Initialize lsm303agr.
+    magnetometer_init(magnetometer_evt_handler);
 }
 
 /**
@@ -166,8 +174,33 @@ int main(void)
 
     NRF_LOG_INFO("Starting..");
 
+    // Start magnetometer measurements.
+    magnetometer_start();
+
     /* Main loop */
     while (1) {
         UNUSED_RETURN_VALUE(NRF_LOG_PROCESS());
+    }
+}
+
+static void magnetometer_evt_handler(const magnetometer_event_t event)
+{
+    switch (event) {
+    case MAGNETOMETER_EVENT_MAGNET_DETECTED:
+        NRF_LOG_INFO("%s MAGNETOMETER_EVENT_MAGNET_DETECTED", __func__);
+
+        // Magnet detected, turn the LED on.
+        bsp_board_led_on(0);
+        bsp_board_led_off(2);
+        break;
+    case MAGNETOMETER_EVENT_MAGNET_NOT_DETECTED:
+        NRF_LOG_INFO("%s MAGNETOMETER_EVENT_MAGNET_NOT_DETECTED", __func__);
+
+        // Magnet not detected, turn the LED off.
+        bsp_board_led_off(0);
+        bsp_board_led_on(2);
+        break;
+    default:
+        NRF_LOG_WARNING("%s Unknown magnetometer event %d", __func__, event);
     }
 }
